@@ -22,7 +22,7 @@
      If selling within 7-14 days:
          5% sent to the house wallet
          15% sent to the burn wallet
-     If selling withing 14-21 days:
+     If selling within 14-21 days:
          5% sent to the house wallet
          5% sent the burn wallet
      If selling after 21 days:
@@ -734,7 +734,7 @@ contract DiamondQ is Context, IERC20, Ownable {
 
             // Shift the array with the oldest block time in the 0 position and add the value in the map
             _timedTransactionsMap[recipient].txBlockTimes.push(_timedTransactionsMap[recipient].txBlockTimes[totalTxs - 1]);
-            for (uint i = totalTxs - 1; i > 0; i++) {
+            for (uint i = totalTxs - 1; i > 0; i--) {
                 _timedTransactionsMap[recipient].txBlockTimes[i] = _timedTransactionsMap[recipient].txBlockTimes[i - 1];
             }
             _timedTransactionsMap[recipient].txBlockTimes[0] = OVER_21_DAYS_BLOCK_TIME;
@@ -843,8 +843,14 @@ contract DiamondQ is Context, IERC20, Ownable {
 
     // Update minimum tokens accumulated on the contract before a swap is performed
     function updateMinTokensBeforeSwap(uint256 newAmount) external onlyOwner {
-        require(newAmount * 10**9 < _totalTokens, "Amount must be less than the total supply");
-        _minTokensBeforeSwap = newAmount * 10 ** 9;
+        uint256 circulatingTokens = _totalTokens - balanceOf(_deadAddress);
+
+        // The maximum tokens before swap is 1% of the circulating supply
+        uint256 maxTokensBeforeSwap = circulatingTokens / 100;
+        uint256 newMinTokensBeforeSwap = newAmount * 10**9;
+
+        require(newMinTokensBeforeSwap < maxTokensBeforeSwap, "Amount must be less than 1 percent of the circulating supply");
+        _minTokensBeforeSwap = newMinTokensBeforeSwap;
     }
 
     function excludeFromFee(address account) public onlyOwner {
